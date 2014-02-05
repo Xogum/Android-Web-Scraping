@@ -3,9 +3,11 @@ package com.example.android_web_scraping;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -15,15 +17,22 @@ import android.content.Context;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.EditText;
 
 public class WebScrapingActivity extends Activity {
 	private String stockStringPattern = "(Last\\:\\<span\\>\\&nbsp\\;)(\\d+\\.\\d+)";
 	private Pattern stockPattern = null;
+	private EditText stockTickers = null;
+	private EditText stockNames = null;
+	private boolean isUpdating = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_web_scraping);
+		
+		stockTickers = (EditText)findViewById(R.id.stockTickers);
+    	stockNames = (EditText)findViewById(R.id.stockNames);
 	}
 
 	@Override
@@ -34,28 +43,52 @@ public class WebScrapingActivity extends Activity {
 	}
 	
 	public void updateStocks(View v) {
-		
+		stockTickers.setText("");
+		isUpdating = true;
 		// check connectivity
 	    ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-
+        
         if (networkInfo != null && networkInfo.isConnected()) {
         	Log.d(this.getClass().toString(), "Connected to the internet.");
-        	startThread("http://quotes.esignal.com/esignalprod/quote.action?s=AAPL", "AAPL");
+        	//For each line in stock textview, start a thread to scrape stock ticker
+        	BufferedReader in;
+        	try {
+        		in = new BufferedReader(new StringReader(stockNames.getText().toString()));
+            	String line;
+				while ((line = in.readLine()) != null) {
+		        	Log.d(this.getClass().toString(), "Checking stock for: " + line);
+		        	startThread("http://quotes.esignal.com/esignalprod/quote.action?s=", line, stockTickers);	
+				}
+			} catch (IOException e) {
+	        	Log.e(this.getClass().toString(), "Could not read from stockNames EditText.");
+				e.printStackTrace();
+			}
         } else {
         	Log.e(this.getClass().toString(), "Could not get network connection.");
-        	//TODO Set field as unknown
+        	stockTickers.setText(R.string.noNetworkLabel);
         }
 				
 		
 	}
 
-	private void startThread(final String site, final String stock) {
+	private void startThread(final String site, final String stock, final EditText editText) {
+        editText.setText(getString(R.string.updating));
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				final String stockPrice = scrapeStockPrice(site + stock);
 				//TODO set textfield with stock price
+	        	Log.d(this.getClass().toString(), "Trying to change EditText field.");
+				editText.post(new Runnable() {
+					public void run() {
+						if (isUpdating) {
+							editText.setText("");
+							isUpdating = false;
+						}
+			        	editText.append(stockPrice + "\n");	
+					}
+				});
 			}		
 		}).start();		
 	}
@@ -74,7 +107,7 @@ public class WebScrapingActivity extends Activity {
 				Matcher m = stockPattern.matcher(inputLine);
 				if (m.find()) {
 					String s = m.group(2);
-					Log.d(this.getClass().toString(), "Group 2 is: " + s);
+					Log.d(this.getClass().toString(), "Group 2 at " + site + " is: " + s);
 					return s;
 				}
 			}

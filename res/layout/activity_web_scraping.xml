@@ -15,7 +15,7 @@
         android:layout_height="wrap_content" >
 
         <EditText
-            android:id="@+id/editText1"
+            android:id="@+id/stockNames"
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -25,7 +25,7 @@
         </EditText>
 
         <EditText
-            android:id="@+id/editText2"
+            android:id="@+id/stockTickers"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
