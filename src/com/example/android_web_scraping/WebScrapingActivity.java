@@ -42,6 +42,10 @@ public class WebScrapingActivity extends Activity {
 		return true;
 	}
 	
+	/*
+	 * after update button is pressed, network connectivity is confirmed and threads are started
+	 * to scrape stock tickers for stock names.
+	 */
 	public void updateStocks(View v) {
 		stockTickers.setText("");
 		isUpdating = true;
@@ -71,7 +75,14 @@ public class WebScrapingActivity extends Activity {
 				
 		
 	}
-
+	
+	/*
+	 * starts a new thread that requests a site to be scraped for a stock ticker and updates EditText view
+	 * with this stock ticker
+	 * @param site a url to a stock ticker site. For example, http://quotes.esignal.com/esignalprod/quote.action?s=
+	 * @param stock a stock ticker that will be appended to the site. For example, "AAPL"
+	 * @param editText an EditText view that will display the stock price
+	 */
 	private void startThread(final String site, final String stock, final EditText editText) {
         editText.setText(getString(R.string.updating));
 		new Thread(new Runnable() {
@@ -92,7 +103,12 @@ public class WebScrapingActivity extends Activity {
 			}		
 		}).start();		
 	}
-		
+	
+	/*
+	 * scrapes a stock price from the given site url.
+	 * @param site a url to a specific ticker on a stock web site. For example, http://quotes.esignal.com/esignalprod/quote.action?s=AAPL
+	 * @return the stock price as a string. For example, "334.23"
+	 */
 	private String scrapeStockPrice(String site) {
 		BufferedReader in = null;
 		if (stockPattern == null)
