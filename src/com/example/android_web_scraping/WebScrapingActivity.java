@@ -20,7 +20,7 @@ import android.view.View;
 import android.widget.EditText;
 
 public class WebScrapingActivity extends Activity {
-	private String stockStringPattern = "(Last\\:\\<span\\>\\&nbsp\\;)(\\d+\\.\\d+)";
+	private String stockStringPattern = "(Last\\:\\<span\\>\\&nbsp\\;)(\\d{1,3}(\\,\\d{1,3})*\\.\\d{2})";
 	private Pattern stockPattern = null;
 	private EditText stockTickers = null;
 	private EditText stockNames = null;
