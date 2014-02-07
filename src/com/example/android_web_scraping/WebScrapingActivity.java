@@ -24,7 +24,7 @@ public class WebScrapingActivity extends Activity {
 	private Pattern stockPattern = null;
 	private EditText stockTickers = null;
 	private EditText stockNames = null;
-	private boolean isUpdating = false;
+	private String[] stockPrices;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +47,6 @@ public class WebScrapingActivity extends Activity {
 	 * to scrape stock tickers for stock names.
 	 */
 	public void updateStocks(View v) {
-		stockTickers.setText("");
-		isUpdating = true;
 		// check connectivity
 	    ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
@@ -56,13 +54,23 @@ public class WebScrapingActivity extends Activity {
         if (networkInfo != null && networkInfo.isConnected()) {
         	Log.d(this.getClass().toString(), "Connected to the internet.");
         	//For each line in stock textview, start a thread to scrape stock ticker
+        	String stocks = stockNames.getText().toString();
+        	//Count how many lines to create array to ensure thread order
+        	int lines = stocks.split(System.getProperty("line.separator")).length;
+        	Log.d(this.getClass().toString(), "There are " + lines + " stocks.");
+        	stockPrices = new String[lines];
         	BufferedReader in;
         	try {
-        		in = new BufferedReader(new StringReader(stockNames.getText().toString()));
+        		in = new BufferedReader(new StringReader(stocks));
             	String line;
+            	int arrayIndex = 0;
 				while ((line = in.readLine()) != null) {
+					if (line.equals("")) {
+						continue;
+					}
 		        	Log.d(this.getClass().toString(), "Checking stock for: " + line);
-		        	startThread("http://quotes.esignal.com/esignalprod/quote.action?s=", line, stockTickers);	
+		        	startThread("http://quotes.esignal.com/esignalprod/quote.action?s=", line, arrayIndex, stockTickers);
+		        	arrayIndex++;
 				}
 			} catch (IOException e) {
 	        	Log.e(this.getClass().toString(), "Could not read from stockNames EditText.");
@@ -83,25 +91,30 @@ public class WebScrapingActivity extends Activity {
 	 * @param stock a stock ticker that will be appended to the site. For example, "AAPL"
 	 * @param editText an EditText view that will display the stock price
 	 */
-	private void startThread(final String site, final String stock, final EditText editText) {
-        editText.setText(getString(R.string.updating));
+	private void startThread(final String site, final String stock, final int arrayIndex, final EditText editText) {
+		stockPrices[arrayIndex] = getString(R.string.updating);
+		updateEditText(editText);
+		
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				final String stockPrice = scrapeStockPrice(site + stock);
-				//TODO set textfield with stock price
-	        	Log.d(this.getClass().toString(), "Trying to change EditText field.");
 				editText.post(new Runnable() {
 					public void run() {
-						if (isUpdating) {
-							editText.setText("");
-							isUpdating = false;
-						}
-			        	editText.append(stockPrice + "\n");	
+						stockPrices[arrayIndex] = stockPrice;
+						updateEditText(editText);
 					}
 				});
 			}		
 		}).start();		
+	}
+	
+	private void updateEditText(final EditText editText) {
+		editText.setText("");
+		for (int i = 0; i < stockPrices.length; i++) {
+			editText.append(stockPrices[i] + "\n");
+			editText.invalidate();
+		}	
 	}
 	
 	/*
